@@ -1,53 +1,47 @@
-use bevy::prelude::*;
-
-#[derive(Component)]
-struct Position {
-    x: f32,
-    y: f32,
+#[derive(Debug)]
+pub struct StrSplit<'haystack,'delimiter> {
+    remainder: Option<&'haystack str>,
+    delimiter: &'delimiter str,
 }
 
-fn print_position_system(query: Query<&Position>) {
-    for position in &query {
-        println!("position: {} {}", position.x, position.y);
-    }
-}
-
-#[derive(Component)]
-struct Person;
-
-#[derive(Component)]
-struct Name(String);
-
-fn add_people(mut commands: Commands) {
-    commands.spawn((Person, Name("Elaina Proctor".to_string())));
-    commands.spawn((Person, Name("Renzo Hume".to_string())));
-    commands.spawn((Person, Name("Zayna Nieves".to_string())));
-}
-
-#[derive(Resource)]
-struct GreetTimer(Timer);
-
-fn greet_people(time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    // update our timer with the time elapsed since the last update
-    // if that caused the timer to finish, we say hello to everyone
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in &query {
-            println!("hello {}!", name.0);
+impl<'haystack,'delimiter> StrSplit<'haystack,'delimiter> {
+    pub fn new(haystack: &'haystack str, delimiter:&'delimiter str) -> Self {
+        Self {
+            remainder: Some(haystack),
+            delimiter,
         }
     }
 }
 
-pub struct HelloPlugin;
+impl<'haystack> Iterator for StrSplit<'haystack,'_> {
+    type Item = &'haystack str;
 
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        // add things to your app here
-        app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-            .add_systems(Startup, add_people)
-            .add_systems(Update, greet_people);
+    fn next(&mut self) -> Option<Self::Item> {
+        let remainder = self.remainder.as_mut()?;
+        if let Some(next_delimiter) = remainder.find(self.delimiter) {
+            let until_delimeter = &remainder[..next_delimiter];
+            *remainder = &remainder[(next_delimiter + self.delimiter.len())..];
+            Some(until_delimeter)
+        } else {
+            self.remainder.take()
+        }
     }
 }
 
+fn until_char(s: &str, c: char) -> &'_ str {
+    StrSplit::new(s, &format!("{}", c))
+        .next()
+        .expect("StrSplit At least give one result")
+}
+
 fn main() {
-    App::new().add_plugins((DefaultPlugins, HelloPlugin)).run();
+    let haystack = "a b c d e";
+    let letters: Vec<_> = StrSplit::new(haystack, " ").collect();
+    assert_eq!(letters, vec!["a", "b", "c", "d", "e"]);
+
+    let haystack = "a b c d ";
+    let letters: Vec<_> = StrSplit::new(haystack, " ").collect();
+    assert_eq!(letters, vec!["a", "b", "c", "d", ""]);
+
+    assert_eq!(until_char("hello world", 'o'), "hell");
 }
