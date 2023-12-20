@@ -1,10 +1,8 @@
-pub mod lifetime_annotations;
-pub mod declarative_macros;
-pub mod iterators;
-pub mod cell;
-pub mod channel;
-pub mod sort;
-pub mod func;
-pub mod fat;
+const GAMES: &str = include_str!("../answers.txt");
 
-fn main() {}
+fn main() {
+    let guesser = bevy_game::algorithms::Naive::new();
+    for answer in GAMES.split_whitespace() {
+        bevy_game::play(answer, guesser);
+    }
+}
