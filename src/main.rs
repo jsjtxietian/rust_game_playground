@@ -1,8 +1,9 @@
 const GAMES: &str = include_str!("../answers.txt");
 
 fn main() {
-    let guesser = bevy_game::algorithms::Naive::new();
+    let w = bevy_game::Wordle::new();
     for answer in GAMES.split_whitespace() {
-        bevy_game::play(answer, guesser);
+        let guesser = bevy_game::algorithms::Naive::new();
+        w.play(answer, guesser);
     }
 }
