@@ -56,19 +56,19 @@ impl Correctness {
         let mut c = [Correctness::Wrong; 5];
         let mut used = [false; 5];
 
-        for (i, (a, g)) in answer.chars().zip(guess.chars()).enumerate() {
+        for (i, (a, g)) in answer.bytes().zip(guess.bytes()).enumerate() {
             if a == g {
                 c[i] = Correctness::Correct;
                 used[i] = true;
             }
         }
 
-        for (i, g) in guess.chars().enumerate() {
+        for (i, g) in guess.bytes().enumerate() {
             if c[i] == Correctness::Correct {
                 continue;
             }
 
-            if answer.chars().enumerate().any(|(i, a)| {
+            if answer.bytes().enumerate().any(|(i, a)| {
                 if a == g && !used[i] {
                     used[i] = true;
                     return true;
@@ -99,82 +99,11 @@ pub struct Guess<'a> {
 }
 
 impl Guess<'_> {
+    // Use the guess as the expected answer and if it yields a different mask 
+    // (to the one you actually got previously) against the previous guess, 
+    // then it cannot be the correct answer.
     pub fn matches(&self, word: &str) -> bool {
-        assert_eq!(word.len(), 5);
-        assert_eq!(self.word.len(), 5);
-
-        let mut used = [false; 5];
-        for (i, ((g, &m), w)) in self
-            .word
-            .bytes()
-            .zip(&self.mask)
-            .zip(word.bytes())
-            .enumerate()
-        {
-            if m == Correctness::Correct {
-                if g != w {
-                    return false;
-                } else {
-                    used[i] = true;
-                }
-            }
-        }
-
-        for (i, (w, &m)) in word.bytes().zip(&self.mask).enumerate() {
-            if m == Correctness::Correct {
-                continue;
-            }
-
-            let mut plausible = true;
-            if self
-                .word
-                .bytes()
-                .zip(&self.mask)
-                .enumerate()
-                .any(|(j, (g, m))| {
-                    if g != w {
-                        return false;
-                    }
-                    if used[j] {
-                        // Can't use this to support this char
-                        return false;
-                    }
-
-                    // We're looking at an `w` in `word`, and have found an `w` in the previous guess.
-                    // The color of that previous `w` will tell us whether this `w` _might_ be okay.
-                    match m {
-                        Correctness::Correct => unreachable!(
-                            "all correct guesses should have result in return or be used"
-                        ),
-                        Correctness::Misplaced if j == i => {
-                            // `w` was yellow in this same position last time around, which means that
-                            // `word` _cannot_ be the answer.
-                            plausible = false;
-                            return false;
-                        }
-                        Correctness::Misplaced => {
-                            used[j] = true;
-                            return true;
-                        }
-                        Correctness::Wrong => {
-                            // early return
-                            plausible = false;
-                            return false;
-                        }
-                    }
-                })
-                && plausible
-            {
-                // 'w' is yellow in previous guess
-                assert!(plausible);
-            } else if !plausible {
-                return false;
-            } else {
-                // no info about char 'w', so word might still match
-            }
-        }
-
-        true
+        Correctness::compute(word, &self.word) == self.mask
     }
 }
 
@@ -239,6 +168,11 @@ mod tests {
             check!("abcde" + [M M M M M] allows "eabcd");
             check!("baaaa" + [W C M W W] allows "aaccc");
             check!("baaaa" + [W C M W W] disallows "caacc");
+        }
+
+        #[test]
+        fn from_crash() {
+            check!("tares" + [W M M W W] disallows "brink");
         }
 
         #[test]

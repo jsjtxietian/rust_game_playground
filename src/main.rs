@@ -16,7 +16,8 @@ struct Args {
 #[derive(ArgEnum, Debug, Clone, Copy)]
 enum Implementation {
     Naive,
-    Allocs
+    Allocs,
+    Vecrem,
 }
 
 fn main() {
@@ -28,6 +29,9 @@ fn main() {
         },
         Implementation::Allocs => {
             play(bevy_game::algorithms::Allocs::new, args.max);
+        },
+        Implementation::Vecrem => {
+            play(bevy_game::algorithms::Vecrem::new, args.max);
         }
     }
 }
