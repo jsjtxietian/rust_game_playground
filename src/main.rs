@@ -18,6 +18,7 @@ enum Implementation {
     Naive,
     Allocs,
     Vecrem,
+    Once,
 }
 
 fn main() {
@@ -26,12 +27,15 @@ fn main() {
     match args.implementation {
         Implementation::Naive => {
             play(bevy_game::algorithms::Naive::new, args.max);
-        },
+        }
         Implementation::Allocs => {
             play(bevy_game::algorithms::Allocs::new, args.max);
-        },
+        }
         Implementation::Vecrem => {
             play(bevy_game::algorithms::Vecrem::new, args.max);
+        }
+        Implementation::Once => {
+            play(bevy_game::algorithms::OnceInit::new, args.max);
         }
     }
 }

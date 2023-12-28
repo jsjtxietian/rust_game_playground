@@ -1,5 +1,5 @@
 use crate::{Correctness, Guess, Guesser, DICTIONARY};
-use std::{collections::HashMap, borrow::Cow};
+use std::{borrow::Cow, collections::HashMap};
 
 pub struct Naive {
     remaining: HashMap<&'static str, usize>,
