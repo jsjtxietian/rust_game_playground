@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 use rand::Rng;
-use std::ops::Range;
+use std::{collections::HashSet, ops::Range};
 
 use crate::{
     asset_loader::SceneAssets,
     collision_detection::Collider,
+    despawn,
     movement::{Acceleration, MovingObejectBundle, Velocity},
 };
 
@@ -88,14 +89,19 @@ fn handle_asteroid_collisions(
     mut commands: Commands,
     query: Query<(Entity, &Collider), With<Asteroid>>,
 ) {
+    let mut despawned_entity = HashSet::new();
     for (entity, collider) in query.iter() {
+        if despawned_entity.contains(&entity) {
+            continue;
+        }
         for &collided_entity in collider.colliding_entities.iter() {
             // Asteroid collided with another asteroid.
             if query.get(collided_entity).is_ok() {
                 continue;
             }
-            // Despawn the asteroid while doing the query loop?
             commands.entity(entity).despawn_recursive();
+            despawned_entity.insert(entity);
+            break;
         }
     }
 }
